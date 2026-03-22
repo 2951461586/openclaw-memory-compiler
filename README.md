@@ -1,5 +1,7 @@
 # memory-compiler
 
+**Language: English | [中文](./README.zh-CN.md)**
+
 [![Release](https://img.shields.io/github/v/release/2951461586/openclaw-memory-compiler?sort=semver)](https://github.com/2951461586/openclaw-memory-compiler/releases)
 [![License](https://img.shields.io/github/license/2951461586/openclaw-memory-compiler)](./LICENSE)
 [![Open Issues](https://img.shields.io/github/issues/2951461586/openclaw-memory-compiler)](https://github.com/2951461586/openclaw-memory-compiler/issues)
