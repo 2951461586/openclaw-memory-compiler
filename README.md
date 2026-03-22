@@ -302,6 +302,7 @@ No. Normal installs should use this README plus `docs/CONFIG.md`. `MIGRATION.md`
 - `docs/OPERATOR-REVIEW-FLOW.md` — operator review workflow
 - `docs/RETIREMENT-PLAN.md` — legacy retirement boundary
 - `MIGRATION.md` — maintainer migration notes / historical context
+- `CONTRIBUTING.md` — contribution expectations, validation flow, and PR evidence shape
 
 ## Current product boundary
 

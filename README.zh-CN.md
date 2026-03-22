@@ -162,6 +162,7 @@ MIT License - 见 [LICENSE](./LICENSE) 文件。
 
 ## 反馈 / 贡献
 
+- 贡献前先看：[CONTRIBUTING.md](./CONTRIBUTING.md)
 - 发现 bug？请开 [Issue](https://github.com/2951461586/openclaw-memory-compiler/issues)
 - 有新功能想法？请开 [Feature Request](https://github.com/2951461586/openclaw-memory-compiler/issues/new?labels=enhancement)
 - 有问题或想讨论设计？请使用 [Discussions](https://github.com/2951461586/openclaw-memory-compiler/discussions)
