@@ -1,0 +1,33 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.local/openclaw-memory-compiler/review-item.schema.json",
+  "title": "ReviewItem",
+  "type": "object",
+  "additionalProperties": true,
+  "properties": {
+    "id": { "type": "string" },
+    "status": { "type": "string", "enum": ["open", "resolved"] },
+    "reviewType": { "type": "string" },
+    "factId": { "type": ["string", "null"] },
+    "title": { "type": ["string", "null"] },
+    "reason": { "type": ["string", "null"] },
+    "scope": { "type": "string" },
+    "priority": { "type": "string" },
+    "targetState": { "type": ["string", "null"] },
+    "suggestedDecision": { "type": ["string", "null"] },
+    "operatorFlow": { "type": ["string", "null"] },
+    "operatorVisible": { "type": ["boolean", "null"] },
+    "origin": { "type": ["string", "null"] },
+    "namespace": { "type": ["string", "null"] },
+    "evidenceMode": { "type": ["string", "null"] },
+    "followUpOf": { "type": "array", "items": { "type": "string" } },
+    "followUpReviewIds": { "type": "array", "items": { "type": "string" } },
+    "sourceRefs": { "type": "array", "items": { "type": "string" } },
+    "createdAt": { "type": "string" },
+    "updatedAt": { "type": "string" },
+    "resolvedAt": { "type": ["string", "null"] },
+    "resolution": { "type": ["string", "null"] },
+    "resolutionNote": { "type": ["string", "null"] }
+  },
+  "required": ["id", "status", "reviewType", "sourceRefs", "createdAt", "updatedAt"]
+}

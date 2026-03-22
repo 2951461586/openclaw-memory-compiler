@@ -1,0 +1,29 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.local/openclaw-memory-compiler/digest-manifest.schema.json",
+  "title": "DigestManifest",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "id",
+    "type",
+    "title",
+    "outputPath",
+    "sourceRefs",
+    "generatedAt",
+    "generationStrategy",
+    "confidence"
+  ],
+  "properties": {
+    "id": { "type": "string" },
+    "type": { "type": "string", "enum": ["today", "week", "thread", "narrative", "facts-digest"] },
+    "title": { "type": "string", "minLength": 1 },
+    "outputPath": { "type": "string", "minLength": 1 },
+    "sourceRefs": { "type": "array", "minItems": 1, "items": { "type": "string" } },
+    "generatedAt": { "type": "string", "format": "date-time" },
+    "generationStrategy": { "type": "string", "minLength": 1 },
+    "confidence": { "type": "number", "minimum": 0, "maximum": 1 },
+    "tokenEstimate": { "type": ["integer", "null"], "minimum": 0 },
+    "supersedes": { "type": ["string", "null"] }
+  }
+}

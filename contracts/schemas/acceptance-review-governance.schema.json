@@ -1,0 +1,55 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.local/openclaw-memory-compiler/acceptance-review-governance.schema.json",
+  "title": "AcceptanceReviewGovernanceReport",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["ok", "generatedAt", "action", "contractVersion", "summary", "governance", "compressed", "keptSampleIds", "evidencePaths"],
+  "properties": {
+    "ok": { "type": "boolean" },
+    "generatedAt": { "type": "string", "format": "date-time" },
+    "action": { "type": "string" },
+    "contractVersion": { "type": "string", "const": "acceptance-review-governance.v1" },
+    "summary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["acceptanceOpenBefore", "acceptanceOpenAfter", "compressedCount", "keptOpenCount", "operatorOpenBefore", "operatorOpenAfter", "uniqueAcceptanceSignatures"],
+      "properties": {
+        "acceptanceOpenBefore": { "type": "integer", "minimum": 0 },
+        "acceptanceOpenAfter": { "type": "integer", "minimum": 0 },
+        "compressedCount": { "type": "integer", "minimum": 0 },
+        "keptOpenCount": { "type": "integer", "minimum": 0 },
+        "operatorOpenBefore": { "type": "integer", "minimum": 0 },
+        "operatorOpenAfter": { "type": "integer", "minimum": 0 },
+        "uniqueAcceptanceSignatures": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "governance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["minAgeHours", "maxKeepPerSignature", "compressionPolicy", "signatures"],
+      "properties": {
+        "minAgeHours": { "type": "number", "minimum": 0 },
+        "maxKeepPerSignature": { "type": "integer", "minimum": 1 },
+        "compressionPolicy": { "type": "string", "minLength": 1 },
+        "signatures": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["signature", "openCountBefore", "keptCount", "compressedCount"],
+            "properties": {
+              "signature": { "type": "string", "minLength": 1 },
+              "openCountBefore": { "type": "integer", "minimum": 0 },
+              "keptCount": { "type": "integer", "minimum": 0 },
+              "compressedCount": { "type": "integer", "minimum": 0 }
+            }
+          }
+        }
+      }
+    },
+    "compressed": { "type": "array", "items": { "type": "object" } },
+    "keptSampleIds": { "type": "array", "items": { "type": "string" } },
+    "evidencePaths": { "type": "array", "minItems": 1, "items": { "type": "string", "minLength": 1 } }
+  }
+}

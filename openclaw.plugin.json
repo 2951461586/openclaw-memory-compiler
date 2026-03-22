@@ -1,0 +1,44 @@
+{
+  "id": "memory-compiler",
+  "name": "Memory Compiler",
+  "description": "Derived continuity and control-plane plugin for OpenClaw: source-first runtime support, operator tooling, clean-install validation, and plugin-first packaging.",
+  "version": "0.2.4",
+  "kind": "extension",
+  "configSchema": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+      "enabled": { "type": "boolean", "default": false },
+      "workspaceDir": { "type": "string" },
+      "dataDir": { "type": "string", "default": "memory/compiler" },
+      "reportsDir": { "type": "string", "default": "memory/compiler/reports" },
+      "runtimeDir": { "type": "string", "default": "memory/compiler" },
+      "docsDir": { "type": "string", "default": "plugin:docs" },
+      "sessionStatePath": { "type": "string", "default": "SESSION-STATE.md" },
+      "workingBufferPath": { "type": "string", "default": "memory/working-buffer.md" },
+      "dailyMemoryDir": { "type": "string", "default": "memory" },
+      "sceneHint": {
+        "type": "string",
+        "enum": ["chat", "task", "precise", "session", "heartbeat"]
+      },
+      "maxPromptChars": { "type": "integer", "minimum": 200, "maximum": 8000, "default": 1200 },
+      "maxPromptTokens": { "type": "integer", "minimum": 50, "maximum": 4000, "default": 300 },
+      "maxReviewItems": { "type": "integer", "minimum": 0, "maximum": 20, "default": 3 },
+      "includeReviewTriage": { "type": "boolean", "default": true },
+      "preferredSourcePrefixes": {
+        "type": "array",
+        "items": { "type": "string" },
+        "default": ["sum:", "file:", "mem:"]
+      },
+      "injectSourceDispatchSystemInstruction": { "type": "boolean", "default": true },
+      "enableRuntimeBridge": { "type": "boolean", "default": true },
+      "enableSessionLifecycle": { "type": "boolean", "default": true },
+      "enableControlPlane": { "type": "boolean", "default": true },
+      "controlPlaneMode": {
+        "type": "string",
+        "enum": ["plugin-preferred"],
+        "default": "plugin-preferred"
+      }
+    }
+  }
+}

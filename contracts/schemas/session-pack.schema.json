@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.local/openclaw-memory-compiler/session-pack.schema.json",
+  "title": "SessionPack",
+  "type": "object",
+  "additionalProperties": true,
+  "properties": {
+    "id": { "type": "string" },
+    "kind": { "type": "string" },
+    "sessionKey": { "type": ["string", "null"] },
+    "scene": { "type": ["string", "null"] },
+    "focus": { "type": ["string", "null"] },
+    "decisions": { "type": "array", "items": { "type": "string" } },
+    "risks": { "type": "array", "items": { "type": "string" } },
+    "nextActions": { "type": "array", "items": { "type": "string" } },
+    "selected": { "type": "object" },
+    "sourceRefs": { "type": "array", "items": { "type": "string" } },
+    "sourceDiscipline": { "type": "object" },
+    "generatedAt": { "type": ["string", "null"] },
+    "expiresAt": { "type": ["string", "null"] }
+  },
+  "required": ["id", "kind", "selected", "sourceRefs"]
+}

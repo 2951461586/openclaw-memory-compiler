@@ -1,0 +1,30 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.local/openclaw-memory-compiler/ingest-bundle.schema.json",
+  "title": "IngestBundle",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "date": { "type": ["string", "null"] },
+    "week": { "type": ["string", "null"] },
+    "facts": {
+      "type": "array",
+      "items": { "$ref": "facts.schema.json" },
+      "default": []
+    },
+    "threads": {
+      "type": "array",
+      "items": { "$ref": "threads.schema.json" },
+      "default": []
+    },
+    "continuity": {
+      "type": "array",
+      "items": { "$ref": "continuity.schema.json" },
+      "default": []
+    },
+    "meta": {
+      "type": "object",
+      "additionalProperties": true
+    }
+  }
+}

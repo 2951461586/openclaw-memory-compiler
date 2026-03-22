@@ -1,0 +1,130 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.local/openclaw-memory-compiler/runtime-probe.schema.json",
+  "title": "RuntimeProbeReport",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "ok": { "type": "boolean" },
+    "generatedAt": { "type": "string", "format": "date-time" },
+    "sessionKey": { "type": "string", "minLength": 1 },
+    "contractVersion": { "type": "string", "const": "runtime-probe.v1" },
+    "probes": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["precise", "task"],
+      "properties": {
+        "precise": { "$ref": "#/$defs/probeSummary" },
+        "task": { "$ref": "#/$defs/probeSummary" }
+      }
+    },
+    "operatorFacing": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["preciseSourceDispatchReady", "preciseSourceDispatchBlocking", "taskCoverageQuality", "summaryText"],
+      "properties": {
+        "preciseSourceDispatchReady": { "type": "boolean" },
+        "preciseSourceDispatchBlocking": { "type": "boolean" },
+        "preciseBlockingReason": { "type": ["string", "null"] },
+        "taskCoverageQuality": { "type": ["string", "null"] },
+        "taskBudgetReason": { "type": ["string", "null"] },
+        "taskEscalation": { "type": ["string", "null"] },
+        "summaryText": { "type": "string", "minLength": 1 }
+      }
+    },
+    "evidencePaths": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "type": "string", "minLength": 1 }
+    }
+  },
+  "required": ["ok", "generatedAt", "sessionKey", "contractVersion", "probes", "operatorFacing", "evidencePaths"],
+  "$defs": {
+    "probeSummary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "name",
+        "ok",
+        "scene",
+        "prependChars",
+        "hasSourceActionPlan",
+        "hasSourceDispatch",
+        "sourceDispatchTool",
+        "blockingSourceDispatch",
+        "blockingReason",
+        "sourceKindAuthority",
+        "sourceKindContractVersion",
+        "runtimeSourceMix",
+        "sourceMixPolicyEffect",
+        "selectedCounts",
+        "reviewTriage",
+        "selectorDiagnostics",
+        "sceneDiagnostics",
+        "recallPlan",
+        "sourceActionPlan",
+        "sourceDispatch",
+        "selectedBudget",
+        "evidencePaths"
+      ],
+      "properties": {
+        "name": { "type": "string", "enum": ["precise", "task"] },
+        "ok": { "type": "boolean" },
+        "scene": { "type": ["string", "null"] },
+        "prependChars": { "type": ["integer", "null"], "minimum": 0 },
+        "hasSourceActionPlan": { "type": "boolean" },
+        "hasSourceDispatch": { "type": "boolean" },
+        "sourceDispatchTool": { "type": ["string", "null"] },
+        "blockingSourceDispatch": { "type": "boolean" },
+        "blockingReason": { "type": ["string", "null"] },
+        "sourceKindAuthority": { "type": ["string", "null"] },
+        "sourceKindContractVersion": { "type": ["string", "null"] },
+        "runtimeSourceMix": { "type": ["object", "null"] },
+        "sourceMixPolicyEffect": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["authorityScore", "trustedRatio", "coverageQuality", "budgetReason", "budgetProfileName", "escalation"],
+          "properties": {
+            "authorityScore": { "type": ["number", "null"] },
+            "trustedRatio": { "type": ["number", "null"] },
+            "coverageQuality": { "type": ["string", "null"] },
+            "budgetReason": { "type": ["string", "null"] },
+            "budgetProfileName": { "type": ["string", "null"] },
+            "escalation": { "type": ["string", "null"] }
+          }
+        },
+        "selectedCounts": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["facts", "threads", "continuity", "digests"],
+          "properties": {
+            "facts": { "type": "integer", "minimum": 0 },
+            "threads": { "type": "integer", "minimum": 0 },
+            "continuity": { "type": "integer", "minimum": 0 },
+            "digests": { "type": "integer", "minimum": 0 }
+          }
+        },
+        "reviewTriage": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["total", "topCount"],
+          "properties": {
+            "total": { "type": "integer", "minimum": 0 },
+            "topCount": { "type": "integer", "minimum": 0 }
+          }
+        },
+        "selectorDiagnostics": { "type": ["object", "null"] },
+        "sceneDiagnostics": { "type": ["object", "null"] },
+        "recallPlan": { "type": ["object", "null"] },
+        "sourceActionPlan": { "type": ["object", "null"] },
+        "sourceDispatch": { "type": ["object", "null"] },
+        "selectedBudget": { "type": ["object", "null"] },
+        "evidencePaths": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "string", "minLength": 1 }
+        }
+      }
+    }
+  }
+}

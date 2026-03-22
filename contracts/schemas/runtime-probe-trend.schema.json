@@ -1,0 +1,81 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.local/openclaw-memory-compiler/runtime-probe-trend.schema.json",
+  "title": "RuntimeProbeTrendReport",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["ok", "generatedAt", "contractVersion", "windows", "snapshot", "history", "baselines", "operatorFacing", "evidencePaths"],
+  "properties": {
+    "ok": { "type": "boolean" },
+    "generatedAt": { "type": "string", "format": "date-time" },
+    "action": { "type": ["string", "null"] },
+    "contractVersion": { "type": "string", "const": "runtime-probe-trend.v1" },
+    "windows": { "type": "array", "items": { "type": "integer", "minimum": 1 }, "minItems": 1 },
+    "snapshot": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["generatedAt", "preciseScene", "taskScene", "preciseDispatchReady", "preciseDispatchBlocking", "taskCoverageQuality", "taskBudgetReason", "taskEscalation", "trusted", "operatorVerdict"],
+      "properties": {
+        "generatedAt": { "type": "string", "format": "date-time" },
+        "preciseScene": { "type": ["string", "null"] },
+        "taskScene": { "type": ["string", "null"] },
+        "preciseDispatchReady": { "type": "boolean" },
+        "preciseDispatchBlocking": { "type": "boolean" },
+        "taskCoverageQuality": { "type": ["string", "null"] },
+        "taskBudgetReason": { "type": ["string", "null"] },
+        "taskEscalation": { "type": ["string", "null"] },
+        "trusted": { "type": "boolean" },
+        "operatorVerdict": { "type": ["string", "null"] }
+      }
+    },
+    "history": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["archiveCountBeforeCurrent", "archiveDir", "recentArchives"],
+      "properties": {
+        "archiveCountBeforeCurrent": { "type": "integer", "minimum": 0 },
+        "archiveDir": { "type": "string" },
+        "recentArchives": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "baselines": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["days", "sampleCountIncludingCurrent", "latest", "trendSummary"],
+        "properties": {
+          "days": { "type": "integer", "minimum": 1 },
+          "sampleCountIncludingCurrent": { "type": "integer", "minimum": 1 },
+          "latest": { "type": "object" },
+          "trendSummary": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["preciseDispatchReadyStableSnapshots", "preciseBlockingStableSnapshots", "taskCoverageStableSnapshots", "trustedStableSnapshots"],
+            "properties": {
+              "preciseDispatchReadyStableSnapshots": { "type": "integer", "minimum": 1 },
+              "preciseBlockingStableSnapshots": { "type": "integer", "minimum": 1 },
+              "taskCoverageStableSnapshots": { "type": "integer", "minimum": 1 },
+              "trustedStableSnapshots": { "type": "integer", "minimum": 1 }
+            }
+          }
+        }
+      }
+    },
+    "operatorFacing": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["summaryText", "preciseDispatchReady", "preciseDispatchBlocking", "taskCoverageQuality", "longestPreciseDispatchReadyStableSnapshots", "longestTaskCoverageStableSnapshots"],
+      "properties": {
+        "summaryText": { "type": "string", "minLength": 1 },
+        "preciseDispatchReady": { "type": "boolean" },
+        "preciseDispatchBlocking": { "type": "boolean" },
+        "taskCoverageQuality": { "type": ["string", "null"] },
+        "longestPreciseDispatchReadyStableSnapshots": { "type": "integer", "minimum": 0 },
+        "longestTaskCoverageStableSnapshots": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "evidencePaths": { "type": "array", "minItems": 1, "items": { "type": "string", "minLength": 1 } }
+  }
+}

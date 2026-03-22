@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.local/openclaw-memory-compiler/trigger-plan.schema.json",
+  "title": "TriggerPlan",
+  "type": "object",
+  "additionalProperties": true,
+  "properties": {
+    "ok": { "type": "boolean" },
+    "summary": { "type": "object" },
+    "triggers": {
+      "type": "object",
+      "properties": {
+        "runPipeline": { "type": "boolean" },
+        "compileToday": { "type": "boolean" },
+        "compileWeek": { "type": "boolean" },
+        "compileNarrative": { "type": "boolean" },
+        "reviewNeeded": { "type": "boolean" },
+        "autoDisputeConflicts": { "type": "boolean" },
+        "autoArbitrateDisputes": { "type": "boolean" }
+      }
+    },
+    "reviewItems": { "type": ["integer", "null"] }
+  },
+  "required": ["ok", "triggers"]
+}

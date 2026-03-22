@@ -1,0 +1,22 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.local/openclaw-memory-compiler/continuity.schema.json",
+  "title": "ContinuityRecord",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["id", "focus", "updatedAt"],
+  "properties": {
+    "id": { "type": "string" },
+    "focus": { "type": "string", "minLength": 1 },
+    "decisions": { "type": "array", "items": { "type": "string" }, "default": [] },
+    "risks": { "type": "array", "items": { "type": "string" }, "default": [] },
+    "nextActions": { "type": "array", "items": { "type": "string" }, "default": [] },
+    "relatedThreads": { "type": "array", "items": { "type": "string" }, "default": [] },
+    "sourceRefs": { "type": "array", "items": { "type": "string" }, "default": [] },
+    "updatedAt": { "type": "string", "format": "date-time" },
+    "expiresAt": { "type": ["string", "null"], "format": "date-time" },
+    "sourceDisciplineState": { "type": ["string", "null"] },
+    "sourceDisciplineReason": { "type": ["string", "null"] },
+    "sourceDisciplineExpiredAt": { "type": ["string", "null"], "format": "date-time" }
+  }
+}

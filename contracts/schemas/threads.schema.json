@@ -1,0 +1,41 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.local/openclaw-memory-compiler/threads.schema.json",
+  "title": "ThreadRecord",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "id",
+    "title",
+    "scope",
+    "status",
+    "summary",
+    "sourceRefs",
+    "updatedAt",
+    "staleAfterHours"
+  ],
+  "properties": {
+    "id": { "type": "string" },
+    "title": { "type": "string", "minLength": 1 },
+    "scope": { "type": "string", "enum": ["user", "project", "system", "agent", "session"] },
+    "status": { "type": "string", "enum": ["active", "stale", "closed", "blocked"] },
+    "summary": { "type": "string", "minLength": 1 },
+    "sourceRefs": { "type": "array", "minItems": 1, "items": { "type": "string" } },
+    "relatedFacts": { "type": "array", "items": { "type": "string" }, "default": [] },
+    "nextStepHint": { "type": ["string", "null"] },
+    "updatedAt": { "type": "string", "format": "date-time" },
+    "staleAfterHours": { "type": "integer", "minimum": 1 },
+    "priority": { "type": ["integer", "null"], "minimum": 0, "maximum": 100 },
+    "owner": { "type": ["string", "null"] },
+    "sourceDisciplineState": { "type": ["string", "null"] },
+    "staledAt": { "type": ["string", "null"], "format": "date-time" },
+    "closedAt": { "type": ["string", "null"], "format": "date-time" },
+    "reopenedAt": { "type": ["string", "null"], "format": "date-time" },
+    "mergedInto": { "type": ["string", "null"] },
+    "blockedAt": { "type": ["string", "null"], "format": "date-time" },
+    "blockReason": { "type": ["string", "null"] },
+    "blockedReason": { "type": ["string", "null"] },
+    "archivedAt": { "type": ["string", "null"], "format": "date-time" },
+    "archiveReason": { "type": ["string", "null"] }
+  }
+}

@@ -1,0 +1,41 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.local/openclaw-memory-compiler/runtime-bridge.schema.json",
+  "title": "RuntimeBridgeContract",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "input": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "prompt": { "type": ["string", "null"] },
+        "sessionKey": { "type": ["string", "null"] },
+        "sceneHint": { "type": ["string", "null"], "enum": ["chat", "task", "precise", "session", "heartbeat", null] },
+        "maxPromptChars": { "type": ["integer", "null"], "minimum": 0 },
+        "maxPromptTokens": { "type": ["integer", "null"], "minimum": 0 },
+        "maxReviewItems": { "type": ["integer", "null"], "minimum": 0 },
+        "includeReviewTriage": { "type": ["boolean", "null"] },
+        "preferredSourcePrefixes": { "type": ["array", "null"], "items": { "type": "string" } }
+      }
+    },
+    "output": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "ok": { "type": "boolean" },
+        "scene": { "type": "string" },
+        "prependContext": { "type": "string" },
+        "selected": { "type": "object" },
+        "sourceActionPlan": { "type": ["object", "null"] },
+        "sourceDispatch": { "type": ["object", "null"] },
+        "sourceKindContract": { "type": ["object", "null"] },
+        "runtimeSourceMix": { "type": ["object", "null"] },
+        "handoff": { "type": ["object", "null"] },
+        "reviewTriage": { "type": "object" }
+      },
+      "required": ["ok", "scene", "prependContext", "selected"]
+    }
+  },
+  "required": ["input", "output"]
+}

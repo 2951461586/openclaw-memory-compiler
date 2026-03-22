@@ -1,0 +1,25 @@
+{
+  "pluginId": "memory-lancedb",
+  "memories": [
+    {
+      "id": "mem001",
+      "category": "preference",
+      "subject": "user",
+      "attribute": "interaction-style",
+      "value": "low-noise",
+      "text": "用户偏好少讲文案、多动手执行",
+      "confirmed": true,
+      "confidence": 0.93
+    },
+    {
+      "id": "mem002",
+      "category": "decision",
+      "subject": "memory-compiler",
+      "attribute": "ui-scope",
+      "value": "no-ui",
+      "text": "当前阶段不展开 UI 设计",
+      "confirmed": true,
+      "confidence": 0.91
+    }
+  ]
+}

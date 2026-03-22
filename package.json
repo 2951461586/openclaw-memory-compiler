@@ -1,0 +1,61 @@
+{
+  "name": "memory-compiler",
+  "version": "0.2.4",
+  "description": "OpenClaw memory-compiler plugin: derived continuity, control-plane tooling, source-first runtime support, install-surface diagnostics, and clean-install validation.",
+  "author": "OpenClaw contributors",
+  "license": "MIT",
+  "type": "module",
+  "main": "index.ts",
+  "keywords": [
+    "openclaw",
+    "openclaw-plugin",
+    "memory-compiler",
+    "derived-memory",
+    "runtime-context",
+    "scheduler",
+    "control-plane"
+  ],
+  "files": [
+    "bin",
+    "contracts",
+    "docs",
+    "scripts",
+    "src",
+    "test",
+    "index.ts",
+    "openclaw.plugin.json",
+    "README.md",
+    "MIGRATION.md",
+    "CHANGELOG.md",
+    "LICENSE"
+  ],
+  "bin": {
+    "memory-compiler": "./bin/memory-compiler.mjs"
+  },
+  "openclaw": {
+    "extensions": [
+      "./index.ts"
+    ]
+  },
+  "scripts": {
+    "test": "node test/cli-smoke.mjs && node --test test/*.test.mjs",
+    "doctor": "node ./bin/memory-compiler.mjs doctor -",
+    "smoke:install": "node ./scripts/memory-compiler/clean-install-smoke.mjs",
+    "smoke:clean-install": "node ./scripts/memory-compiler/clean-install-smoke.mjs",
+    "smoke:trusted-install": "node ./scripts/memory-compiler/trusted-install-smoke.mjs",
+    "acceptance:plugin-only": "node ./scripts/memory-compiler/plugin-only-acceptance.mjs",
+    "check:publish": "node ./scripts/memory-compiler/publish-check.mjs"
+  },
+  "peerDependencies": {
+    "openclaw": ">=2026.3.13"
+  },
+  "devDependencies": {},
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/2951461586/openclaw-memory-compiler.git"
+  },
+  "bugs": {
+    "url": "https://github.com/2951461586/openclaw-memory-compiler/issues"
+  },
+  "homepage": "https://github.com/2951461586/openclaw-memory-compiler#readme"
+}

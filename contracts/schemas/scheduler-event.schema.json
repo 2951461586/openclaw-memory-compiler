@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.local/openclaw-memory-compiler/scheduler-event.schema.json",
+  "title": "SchedulerEvent",
+  "type": "object",
+  "additionalProperties": true,
+  "properties": {
+    "eventType": { "type": "string" },
+    "eventFingerprint": { "type": ["string", "null"] },
+    "dedupeMinutes": { "type": ["integer", "null"], "minimum": 0 },
+    "minIntervalMinutes": { "type": ["integer", "null"], "minimum": 0 },
+    "force": { "type": ["boolean", "null"] },
+    "date": { "type": ["string", "null"] },
+    "week": { "type": ["string", "null"] },
+    "bundlePath": { "type": ["string", "null"] },
+    "bundle": { "type": ["object", "null"] },
+    "changedSourceRefs": { "type": ["array", "null"], "items": { "type": "string" } },
+    "source": { "type": ["object", "null"] }
+  },
+  "required": ["eventType"]
+}
