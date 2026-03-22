@@ -1,5 +1,10 @@
 # memory-compiler
 
+[![Release](https://img.shields.io/github/v/release/2951461586/openclaw-memory-compiler?sort=semver)](https://github.com/2951461586/openclaw-memory-compiler/releases)
+[![License](https://img.shields.io/github/license/2951461586/openclaw-memory-compiler)](./LICENSE)
+[![Open Issues](https://img.shields.io/github/issues/2951461586/openclaw-memory-compiler)](https://github.com/2951461586/openclaw-memory-compiler/issues)
+[![Stars](https://img.shields.io/github/stars/2951461586/openclaw-memory-compiler?style=social)](https://github.com/2951461586/openclaw-memory-compiler)
+
 Derived continuity and control-plane plugin for OpenClaw.
 
 `memory-compiler` turns source-backed inputs (workspace files, LCM recall, durable memory exports, session state) into operator/runtime artifacts such as facts, threads, continuity records, digests, session packs, source backlinks, review queues, and control-plane reports.
