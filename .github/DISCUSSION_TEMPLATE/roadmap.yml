@@ -1,0 +1,29 @@
+title: "Roadmap / planning"
+labels: ["roadmap"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use this thread to propose roadmap items, sequence major work, or track release themes.
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem / opportunity
+      description: What is the operator/runtime gap?
+      placeholder: Describe the gap.
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed direction
+      description: What should change?
+      placeholder: Describe the direction.
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance / evidence
+      description: How will we know this is done?
+      placeholder: Tests, smoke, verify, reports, docs, rollout notes.

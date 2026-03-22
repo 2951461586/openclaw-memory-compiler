@@ -7,6 +7,43 @@
 
 Derived continuity and control-plane plugin for OpenClaw.
 
+## Install / verify at a glance
+
+```bash
+cd /path/to/your/openclaw/workspace
+mkdir -p plugins
+
+git clone https://github.com/2951461586/openclaw-memory-compiler.git plugins/memory-compiler
+cd plugins/memory-compiler
+npm install
+
+openclaw gateway restart
+node ./bin/memory-compiler.mjs doctor -
+node ./bin/memory-compiler.mjs migrate -
+node ./bin/memory-compiler.mjs refresh - <<'JSON'
+{
+  "pluginConfig": {
+    "enabled": true,
+    "controlPlaneMode": "plugin-preferred"
+  }
+}
+JSON
+node ./bin/memory-compiler.mjs verify - <<'JSON'
+{
+  "pluginConfig": {
+    "enabled": true,
+    "controlPlaneMode": "plugin-preferred"
+  }
+}
+JSON
+npm test
+npm run smoke:clean-install
+npm run smoke:trusted-install
+npm run check:publish
+```
+
+If those commands are green, the install surface and publish surface are in good shape.
+
 `memory-compiler` turns source-backed inputs (workspace files, LCM recall, durable memory exports, session state) into operator/runtime artifacts such as facts, threads, continuity records, digests, session packs, source backlinks, review queues, and control-plane reports.
 
 ## What this plugin is for
