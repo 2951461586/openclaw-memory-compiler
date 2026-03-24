@@ -4,22 +4,39 @@ import { isoWeekLabel } from './common.mjs';
 import { readJsonl } from './jsonl-store.mjs';
 import { compilerDirFrom } from './plugin-paths.mjs';
 
-const TRUSTED_PREFIXES = ['sum:', 'file:', 'mem:'];
+import { isTrustedRef as isTrustedSourceRef } from './source-discipline.mjs';
 
 function readTextIfExists(p){ return fs.existsSync(p) ? fs.readFileSync(p,'utf8') : null; }
 function readJsonIfExists(p){ return fs.existsSync(p) ? JSON.parse(fs.readFileSync(p,'utf8')) : null; }
 function estTokens(text){ return Math.ceil(String(text || '').length / 4); }
-function isTrustedRef(ref){ return TRUSTED_PREFIXES.some(p => String(ref).startsWith(p)); }
-function trustedRefCount(refs=[]){ return refs.filter(isTrustedRef).length; }
+function trustedRefCount(refs=[]){ return refs.filter(isTrustedSourceRef).length; }
 function refBreakdown(refs=[]){
-  const out = { totalRefs: refs.length, trustedRefs: 0, sum: 0, file: 0, mem: 0, session: 0, msg: 0, artifact: 0, other: 0 };
+  const out = {
+    totalRefs: refs.length,
+    trustedRefs: 0,
+    untrustedRefs: 0,
+    sum: 0,
+    sumTrusted: 0,
+    sumUntrusted: 0,
+    file: 0,
+    mem: 0,
+    session: 0,
+    msg: 0,
+    artifact: 0,
+    other: 0,
+  };
   for (const ref of refs) {
-    if (String(ref).startsWith('sum:')) { out.sum++; out.trustedRefs++; }
-    else if (String(ref).startsWith('file:')) { out.file++; out.trustedRefs++; }
-    else if (String(ref).startsWith('mem:')) { out.mem++; out.trustedRefs++; }
-    else if (String(ref).startsWith('session:')) out.session++;
-    else if (String(ref).startsWith('msg:')) out.msg++;
-    else if (String(ref).startsWith('artifact:')) out.artifact++;
+    const s = String(ref);
+    if (s.startsWith('sum:')) {
+      out.sum++;
+      if (isTrustedSourceRef(ref)) { out.trustedRefs++; out.sumTrusted++; }
+      else { out.untrustedRefs++; out.sumUntrusted++; }
+    }
+    else if (s.startsWith('file:')) { out.file++; out.trustedRefs++; }
+    else if (s.startsWith('mem:')) { out.mem++; out.trustedRefs++; }
+    else if (s.startsWith('session:')) out.session++;
+    else if (s.startsWith('msg:')) out.msg++;
+    else if (s.startsWith('artifact:')) out.artifact++;
     else out.other++;
   }
   return out;
@@ -238,16 +255,39 @@ function recordSearchText(rec={}) {
     .join(' ')
     .toLowerCase();
 }
+function escapeRegex(text='') {
+  return String(text).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+function looksOpaqueToken(value='') {
+  const s = String(value || '').trim();
+  if (!s) return false;
+  if (/\s/.test(s)) return false;
+  if (/[\u4e00-\u9fff]/.test(s)) return false;
+  if (!/^[a-z0-9._:-]+$/i.test(s)) return false;
+  return s.length >= 12;
+}
+function fieldMatchesTerm(text='', term='') {
+  const hay = String(text || '').toLowerCase();
+  const needle = String(term || '').toLowerCase().trim();
+  if (!hay || !needle) return false;
+  if (/^[a-z0-9._/-]{3,}$/i.test(needle)) {
+    const safe = escapeRegex(needle);
+    return new RegExp(`(^|[^a-z0-9])${safe}([^a-z0-9]|$)`, 'i').test(hay);
+  }
+  return hay.includes(needle);
+}
 function queryScore(rec, terms=[]) {
   if (!terms.length) return 0;
   const title = String(rec?.title || '').toLowerCase();
   const summary = String(rec?.summary || rec?.text || '').toLowerCase();
-  const meta = [rec?.subject, rec?.attribute, rec?.value, ...(rec?.tags || [])].filter(Boolean).join(' ').toLowerCase();
+  const metaParts = [rec?.subject, rec?.attribute, ...(rec?.tags || [])];
+  if (!looksOpaqueToken(rec?.value)) metaParts.push(rec?.value);
+  const meta = metaParts.filter(Boolean).join(' ').toLowerCase();
   let score = 0;
   for (const term of terms) {
-    if (title.includes(term)) score += 8;
-    if (summary.includes(term)) score += 6;
-    if (meta.includes(term)) score += 4;
+    if (fieldMatchesTerm(title, term)) score += 8;
+    if (fieldMatchesTerm(summary, term)) score += 6;
+    if (fieldMatchesTerm(meta, term)) score += 4;
   }
   return score;
 }
@@ -352,7 +392,7 @@ function buildRecallPlan(selected, payload={}) {
   const candidateRefs = uniqueRefs([
     ...(selected?.facts || []).flatMap(x => x.sourceRefs || []),
     ...(selected?.threads || []).flatMap(x => x.sourceRefs || []),
-  ].filter(isTrustedRef)).slice(0, 8);
+  ].filter(isTrustedSourceRef)).slice(0, 8);
   const refStats = refBreakdown(candidateRefs);
   const actions = [];
   if (refStats.sum > 0) actions.push({ kind: 'expand-summaries-first', refs: candidateRefs.filter(r => String(r).startsWith('sum:')).slice(0, 3) });
@@ -424,7 +464,7 @@ function sliceSessionSelected(selected, currentPack, variant='task') {
     out.facts = out.facts.slice(0, 4); out.threads = out.threads.slice(0, 2); out.continuity = out.continuity.slice(0, 2);
     const capsule = currentPack?.handoffDraft || currentPack?.promptHint || '';
     if (capsule) {
-      const cleanRefs = (currentPack?.sourceRefs || []).filter(r => TRUSTED_PREFIXES.some(p => String(r).startsWith(p)));
+      const cleanRefs = (currentPack?.sourceRefs || []).filter(isTrustedSourceRef);
       out.digests = [{ type: 'handoff', snippet: short(capsule, 500), sourceRefs: cleanRefs }, ...out.digests.slice(0, 1)];
     }
     out.rationale = [...(out.rationale || []), 'session-handoff-slice'];
@@ -519,11 +559,15 @@ export function selectRuntimeContext({ root, payload, paths = null }) {
   else if(scene==='heartbeat'){ selected.facts=pickFacts(facts,payload.maxFacts??3,['confirmed'],preferredSourcePrefixes); selected.threads=pickThreads(threads,payload.maxThreads??5,['active','stale','blocked'],preferredSourcePrefixes); selected.continuity=pickContinuity(continuity,payload.maxContinuity??2,preferredSourcePrefixes); if(today && todayManifest) selected.digests.push({type:'today',snippet:short(today,payload.maxChars??180),sourceRefs:todayManifest.sourceRefs||[]}); if(week && weekManifest) selected.digests.push({type:'week',snippet:short(week,payload.maxChars??180),sourceRefs:weekManifest.sourceRefs||[]}); selected.escalation='summarize-then-decide'; selected.rationale.push('heartbeat-needs-signal-not-bloat'); }
   else if(scene==='narrative'){ selected.facts=pickFacts(facts,payload.maxFacts??8,['confirmed'],preferredSourcePrefixes); selected.threads=pickThreads(threads,payload.maxThreads??5,['active'],preferredSourcePrefixes); selected.continuity=pickContinuity(continuity,payload.maxContinuity??3,preferredSourcePrefixes); if(narrative && narrativeManifest) selected.digests.push({type:'narrative',snippet:short(narrative,payload.maxChars??600),sourceRefs:narrativeManifest.sourceRefs||[]}); selected.rationale.push('narrative-mode'); }
   else if(scene==='session'){
-    if (currentPack && (!currentPack.expiresAt || new Date(currentPack.expiresAt).getTime() > Date.now())) {
+    const requestedSessionKey = payload?.sessionKey ? String(payload.sessionKey) : null;
+    const currentPackUsable = !!(currentPack
+      && (!currentPack.expiresAt || new Date(currentPack.expiresAt).getTime() > Date.now())
+      && (!requestedSessionKey || String(currentPack.sessionKey || '') === requestedSessionKey));
+    if (currentPackUsable) {
       selected = { ...currentPack.selected, scene: 'session', preferredSourcePrefixes, rationale: [...(currentPack.selected?.rationale || []), 'session-pack-hot-state'], packId: currentPack.id, packFocus: currentPack.focus, escalation: currentPack.selected?.escalation || 'lcm-on-demand', primaryThreadId: currentPack.primaryThreadId || null, secondaryThreadIds: currentPack.secondaryThreadIds || [] };
       selected = sliceSessionSelected(selected, currentPack, String(payload?.packVariant || 'task'));
     } else {
-      selected.facts=pickFacts(facts,payload.maxFacts??6,['confirmed'],preferredSourcePrefixes); selected.threads=pickThreads(threads,payload.maxThreads??3,['active'],preferredSourcePrefixes); selected.continuity=pickContinuity(continuity,payload.maxContinuity??2,preferredSourcePrefixes); selected.rationale.push('session-fallback');
+      selected.facts=pickFacts(facts,payload.maxFacts??6,['confirmed'],preferredSourcePrefixes); selected.threads=pickThreads(threads,payload.maxThreads??3,['active'],preferredSourcePrefixes); selected.continuity=pickContinuity(continuity,payload.maxContinuity??2,preferredSourcePrefixes); if (requestedSessionKey && currentPack) selected.rationale.push('session-pack-miss'); selected.rationale.push('session-fallback');
     }
   } else throw new Error(`Unsupported scene: ${scene}`);
 

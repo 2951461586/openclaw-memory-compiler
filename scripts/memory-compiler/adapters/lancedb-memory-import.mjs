@@ -14,7 +14,9 @@ const memories = Array.isArray(payload?.memories) ? payload.memories : [];
 const facts = [];
 
 for (const m of memories) {
-  const sourceRef = m.id ? `mem:${payload.pluginId || 'memory-lancedb'}:${m.id}` : null;
+  // Canonicalize durable memory refs to mem:<id> (plugin id stays in payload/plugin metadata)
+  // This keeps runtime selection / source discipline simple and avoids plugin-scoped ref shapes.
+  const sourceRef = m.id ? `mem:${m.id}` : null;
   const category = String(m.category || 'other');
   let scope = 'project';
   if (category === 'preference' || category === 'entity') scope = 'user';

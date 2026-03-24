@@ -70,8 +70,11 @@ export function runPipeline(payload = {}, runtime = resolveCompilerRuntime()) {
 
   if (payload.autoArbitrateDisputes) {
     const arbPath = tempJson('pipeline-arbitrate', { apply: true, preferredSourcePrefixes: payload.preferredSourcePrefixes || ['file:','sum:','mem:','artifact:'] });
-    results.factArbitration = runScript(runtime, 'fact-arbitrate.mjs', arbPath);
-    fs.unlinkSync(arbPath);
+    try {
+      results.factArbitration = runScript(runtime, 'fact-arbitrate.mjs', arbPath);
+    } finally {
+      if (fs.existsSync(arbPath)) fs.unlinkSync(arbPath);
+    }
     results.factConflictsAfterArbitration = detectFactConflicts({}, runtime);
   }
 
@@ -97,8 +100,11 @@ export function runPipeline(payload = {}, runtime = resolveCompilerRuntime()) {
 
   if (payload.compileSessionPack !== false && (payload.forceSessionPack || anyChanged)) {
     const p = tempJson('pipeline-session-pack', { scene: payload.sessionPackScene || 'task', date: payload.date, week: payload.week || isoWeekLabel(payload.date) || isoWeekLabel() || '1970-W01', sessionKey: payload.sessionKey || null, preferredSourcePrefixes: payload.preferredSourcePrefixes || ['sum:','file:','mem:'] });
-    results.sessionPack = runScript(runtime, 'session-pack.mjs', p);
-    fs.unlinkSync(p);
+    try {
+      results.sessionPack = runScript(runtime, 'session-pack.mjs', p);
+    } finally {
+      if (fs.existsSync(p)) fs.unlinkSync(p);
+    }
   }
 
   results.digestGc = runScript(runtime, 'digest-gc.mjs');
@@ -107,8 +113,11 @@ export function runPipeline(payload = {}, runtime = resolveCompilerRuntime()) {
   results.sourceDiscipline = checkSourceDiscipline({}, runtime);
 
   const backlinkCfg = tempJson('pipeline-backlinks', { includeKinds: ['lcm-summary', 'lcm-message', 'file', 'memory-item', 'session'] });
-  results.sourceBacklinks = runScript(runtime, 'source-backlinks.mjs', backlinkCfg);
-  fs.unlinkSync(backlinkCfg);
+  try {
+    results.sourceBacklinks = runScript(runtime, 'source-backlinks.mjs', backlinkCfg);
+  } finally {
+    if (fs.existsSync(backlinkCfg)) fs.unlinkSync(backlinkCfg);
+  }
 
   results.controlPlane = refreshControlPlane({ root: runtime.workspaceDir, payload: { refresh: true }, paths: runtime });
 

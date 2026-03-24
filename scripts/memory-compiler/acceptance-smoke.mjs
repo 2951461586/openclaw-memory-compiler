@@ -123,8 +123,8 @@ const packRefresh3 = run('session-pack-lifecycle.mjs', writeTemp('accept-pack-re
 record('session-pack-restored-post-finalize', packRefresh3.ok === true && !!packRefresh3.packId, packRefresh3);
 const sessionPackCurrent = JSON.parse(fs.readFileSync(path.join(root, 'memory', 'compiler', 'session-packs', 'current.json'), 'utf8'));
 record('session-pack-thread-binding-visible', !!sessionPackCurrent.primaryThreadId, { primaryThreadId: sessionPackCurrent.primaryThreadId, secondaryThreadIds: sessionPackCurrent.secondaryThreadIds });
-const sessionBrief = run('runtime-selector.mjs', writeTemp('accept-session-brief', { scene: 'session', packVariant: 'brief', date: '2026-03-20', week: '2026-W12', maxPromptChars: 500, maxPromptTokens: 120 }));
-const sessionHandoff = run('runtime-selector.mjs', writeTemp('accept-session-handoff', { scene: 'session', packVariant: 'handoff', date: '2026-03-20', week: '2026-W12', maxPromptChars: 900, maxPromptTokens: 220 }));
+const sessionBrief = run('runtime-selector.mjs', writeTemp('accept-session-brief', { scene: 'session', sessionKey: 'accept-session', packVariant: 'brief', date: '2026-03-20', week: '2026-W12', maxPromptChars: 500, maxPromptTokens: 120 }));
+const sessionHandoff = run('runtime-selector.mjs', writeTemp('accept-session-handoff', { scene: 'session', sessionKey: 'accept-session', packVariant: 'handoff', date: '2026-03-20', week: '2026-W12', maxPromptChars: 900, maxPromptTokens: 220 }));
 record('session-brief-slice-tightens', sessionBrief.ok === true && (sessionBrief.selected.threads || []).length <= 1 && (sessionBrief.selected.facts || []).length <= 3, { facts: sessionBrief.selected.facts?.length, threads: sessionBrief.selected.threads?.length, variant: sessionBrief.selected.packVariant });
 record('session-handoff-slice-adds-capsule', sessionHandoff.ok === true && (sessionHandoff.selected.digests || []).some(d => d.type === 'handoff'), { digests: sessionHandoff.selected.digests, variant: sessionHandoff.selected.packVariant });
 const subagentComplete = run('scheduler-run.mjs', writeTemp('accept-subagent-complete', { eventType: 'subagent-complete', sessionKey: 'accept-session', force: true }));
@@ -143,7 +143,7 @@ record('runtime-probe-operator-facing-evidence-visible', runtimeProbe.ok === tru
 const contractCheckPostProbe = run('contract-check.mjs');
 record('runtime-probe-contract-enforced', contractCheckPostProbe.ok === true && (contractCheckPostProbe.summary || []).some(item => item.name === 'runtime-probe' && item.errors === 0), { contractCheckPostProbe });
 const burnIn = run('burn-in-run.mjs', writeTemp('accept-burn-in', { iterations: 2, sessionKey: 'accept-burnin-session', includeAcceptance: false, date: '2026-03-20', week: '2026-W12' }));
-record('burn-in-run-builds', burnIn.ok === true && burnIn.finalVerify?.ok === true && ['trusted-with-acceptance-samples','trusted-with-operator-backlog'].includes(String(burnIn.finalVerify?.operatorVerdict || '')), { burnIn });
+record('burn-in-run-builds', burnIn.ok === true && burnIn.finalVerify?.ok === true && ['trusted-with-acceptance-samples','trusted-with-operator-backlog','trusted-and-clear'].includes(String(burnIn.finalVerify?.operatorVerdict || '')), { burnIn });
 const rebuildReplay = run('rebuild-replay.mjs', writeTemp('accept-rebuild-replay', { action: 'replay', sessionKey: 'accept-rebuild-replay', includeAcceptance: false, windows: [7, 30], events: [{ eventType: 'heartbeat', eventFingerprint: `accept-replay-heartbeat-${acceptRunId}` }, { eventType: 'session-end', eventFingerprint: `accept-replay-session-end-${acceptRunId}` }] }));
 record('rebuild-replay-operator-flow-builds', rebuildReplay.ok === true && rebuildReplay.operatorVerdict?.startsWith('trusted'), { rebuildReplay });
 const orphanDigestDetect = run('orphan-digest.mjs', writeTemp('accept-orphan-digest-detect', { action: 'detect', maxItems: 50 }));
@@ -227,11 +227,14 @@ const adapterSessionState = JSON.parse(execFileSync('node', [path.join(base, 'ad
 record('adapter-session-state-pipeline-builds', adapterSessionState.ok === true && adapterSessionState.result?.results?.controlPlane?.ok === true, { adapter: adapterSessionState.adapter, controlPlane: adapterSessionState.result?.results?.controlPlane });
 const adapterLancedb = JSON.parse(execFileSync('node', [path.join(base, 'adapter-pipeline-run.mjs'), 'lancedb', path.join(base, 'examples', 'lancedb-import.sample.json')], { cwd: root, encoding: 'utf8' }));
 record('adapter-lancedb-pipeline-builds', adapterLancedb.ok === true && adapterLancedb.result?.results?.facts?.ok === true, { adapter: adapterLancedb.adapter, facts: adapterLancedb.result?.results?.facts });
+const realImportBatchId = `accept-real-${acceptRunId}`;
 const realImportInput = writeTemp('accept-real-import', {
   date: '2026-03-21',
   week: '2026-W12',
   durableImportMode: 'batch',
   durableBatchSize: 2,
+  label: realImportBatchId,
+  importStrategy: 'full',
   dailyMemoryPaths: ['/root/.openclaw/workspace/memory/2026-03-21.md', '/root/.openclaw/workspace/memory/2026-03-20.md'],
   workspaceFiles: [
     '/root/.openclaw/workspace/SESSION-STATE.md',
@@ -239,33 +242,70 @@ const realImportInput = writeTemp('accept-real-import', {
     masterplanPath,
     implementationBacklogPath
   ],
+  lcmSummaries: [{
+    id: 'sum_4e6742ae47a210c5',
+    messageIds: [`${realImportBatchId}-msg-1`],
+    scope: 'project',
+    threadTitle: `real import lcm summary ${realImportBatchId}`,
+    threadSummary: 'real import should accept inline LCM summaries via adapter entry',
+    confirmedFacts: [{
+      text: 'real import LCM summary acceptance item',
+      tags: ['acceptance', 'lcm-real-import'],
+      confidence: 0.9
+    }],
+    focus: 'Verify import-real-sources includes LCM summary adapter input.',
+    nextActions: ['Check source backlinks after real import.'],
+    relatedThreads: ['memory-compiler-ingest-real-sources']
+  }],
   durableMemories: [{
-    id: 'accept-real-durable-1',
+    id: `${realImportBatchId}-durable-1`,
     text: 'real durable memory import path acceptance item',
     category: 'project',
     confirmed: true,
     confidence: 0.88,
-    sourceRefs: ['mem:accept-real-durable-1']
+    sourceRefs: [`mem:${realImportBatchId}-durable-1`]
   }, {
-    id: 'accept-real-durable-2',
+    id: `${realImportBatchId}-durable-2`,
     text: 'real durable memory import path acceptance item batch second',
     category: 'project',
     confirmed: true,
     confidence: 0.84,
-    sourceRefs: ['mem:accept-real-durable-2']
+    sourceRefs: [`mem:${realImportBatchId}-durable-2`]
   }, {
-    id: 'accept-real-durable-3',
+    id: `${realImportBatchId}-durable-3`,
     text: 'real durable memory import path acceptance item batch third',
     category: 'decision',
     confirmed: false,
     confidence: 0.7,
-    sourceRefs: ['mem:accept-real-durable-3']
+    sourceRefs: [`mem:${realImportBatchId}-durable-3`]
   }]
 });
 const realImport = run('import-real-sources.mjs', realImportInput);
-record('real-import-entry-runs', realImport.ok === true && realImport.sources?.dailyMemoryPaths?.length >= 1 && realImport.runs?.length >= 2, { sources: realImport.sources, runs: realImport.runs, out: realImport.out });
+record('real-import-entry-runs', realImport.ok === true && realImport.sources?.dailyMemoryPaths?.length >= 1 && realImport.runs?.length >= 3, { sources: realImport.sources, runs: realImport.runs, out: realImport.out });
+record('real-import-lcm-visible', realImport.ok === true && realImport.sources?.lcmSummaryItems >= 1 && realImport.runs?.some(item => item.kind === 'lcm' && item.threadsCreated >= 1), { sources: realImport.sources, runs: realImport.runs, out: realImport.out });
 record('real-import-batch-durable-visible', realImport.ok === true && realImport.runs?.some(item => item.kind === 'lancedb-batch' && item.batchCount >= 2 && item.durableItems >= 3), { runs: realImport.runs, out: realImport.out });
-record('real-import-source-coverage-visible', realImport.ok === true && (realImport.sourceCoverage?.realInputSourcesPresent?.dailyMemory?.length || 0) >= 1 && (realImport.sourceCoverage?.realInputSourcesPresent?.workspace?.length || 0) >= 1 && (realImport.sourceCoverage?.realInputSourcesPresent?.durableMemory?.length || 0) >= 1, { sourceCoverage: realImport.sourceCoverage, out: realImport.out });
+record('real-import-source-coverage-visible', realImport.ok === true && (realImport.sourceCoverage?.realInputSourcesPresent?.dailyMemory?.length || 0) >= 1 && (realImport.sourceCoverage?.realInputSourcesPresent?.workspace?.length || 0) >= 1 && (realImport.sourceCoverage?.realInputSourcesPresent?.durableMemory?.length || 0) >= 1 && (realImport.sourceCoverage?.realInputSourcesPresent?.lcmSummary?.length || 0) >= 1 && (realImport.sourceCoverage?.realInputSourcesPresent?.lcmMessage?.length || 0) >= 1, { sourceCoverage: realImport.sourceCoverage, out: realImport.out });
+const liveLcmRealImport = run('import-real-sources.mjs', writeTemp('accept-real-import-live-lcm', {
+  date: '2026-03-21',
+  week: '2026-W12',
+  lcmExport: {
+    summaryIds: ['sum_4e6742ae47a210c5'],
+    limit: 1
+  }
+}));
+record('real-import-live-lcm-export-visible', liveLcmRealImport.ok === true && liveLcmRealImport.sources?.lcmSummaryImportMode === 'live-export' && liveLcmRealImport.sources?.lcmSummaryItems >= 1 && liveLcmRealImport.runs?.some(item => item.kind === 'lcm' && Number(item.sourceBacklinks || 0) >= 1), { sources: liveLcmRealImport.sources, runs: liveLcmRealImport.runs, out: liveLcmRealImport.out });
+record('real-import-live-lcm-coverage-visible', liveLcmRealImport.ok === true && (liveLcmRealImport.sourceCoverage?.realInputSourcesPresent?.lcmSummary?.length || 0) >= 1 && (liveLcmRealImport.sourceCoverage?.realInputSourcesPresent?.lcmMessage?.length || 0) >= 1, { sourceCoverage: liveLcmRealImport.sourceCoverage, out: liveLcmRealImport.out });
+const liveDurableRealImport = run('import-real-sources.mjs', writeTemp('accept-real-import-live-durable', {
+  date: '2026-03-21',
+  week: '2026-W12',
+  durableMemoryExport: {
+    scope: 'agent:violet'
+  },
+  durableImportMode: 'batch',
+  durableBatchSize: 10
+}));
+record('real-import-live-durable-export-visible', liveDurableRealImport.ok === true && liveDurableRealImport.sources?.durableMemoryExportMode === 'live-export' && liveDurableRealImport.sources?.durableMemoryItems >= 1 && liveDurableRealImport.runs?.some(item => String(item.kind).startsWith('lancedb')), { sources: liveDurableRealImport.sources, runs: liveDurableRealImport.runs, out: liveDurableRealImport.out });
+record('real-import-live-durable-coverage-visible', liveDurableRealImport.ok === true && (liveDurableRealImport.sourceCoverage?.realInputSourcesPresent?.durableMemory?.length || 0) >= 1, { sourceCoverage: liveDurableRealImport.sourceCoverage, out: liveDurableRealImport.out });
 const durableBatchImport = run('import-durable-memory-batch.mjs', writeTemp('accept-durable-batch-import', {
   date: '2026-03-21',
   week: '2026-W12',
@@ -320,15 +360,16 @@ const durableBatchReplay = run('import-durable-memory-batch.mjs', writeTemp('acc
 record('durable-batch-replay-failed-batch-acceptance', durableBatchReplay.ok === true && Array.isArray(durableBatchReplay.replayFailedBatchIds) && durableBatchReplay.replayFailedBatchIds.length >= 1 && durableBatchReplay.batches?.every(item => item.skipped === true || durableBatchReplay.replayFailedBatchIds.includes(item.batchId)) && durableBatchReplay.failedBatches === 0, { durableBatchReplay, replayedFrom: durableBatchFailureFixture.incremental?.failedBatchIds });
 const sourceKindDiagnostics = run('source-kind-diagnostics.mjs', writeTemp('accept-source-kind-diagnostics', { scenes: ['task', 'precise', 'session'] }));
 record('source-kind-contract-visible', sourceKindDiagnostics.ok === true && sourceKindDiagnostics.diagnostics?.some(item => item.scene === 'precise' && item.contract?.authority === 'source-first' && item.contract?.claimRule === 'exact-claim-requires-evidence-path' && item.contract?.kindRules?.file?.exactClaimUse === 'preferred-with-evidence-path'), { diagnostics: sourceKindDiagnostics.diagnostics });
+record('source-kind-contract-lcm-message-visible', sourceKindDiagnostics.ok === true && sourceKindDiagnostics.diagnostics?.some(item => item.scene === 'precise' && item.contract?.kindRules?.['lcm-message']?.exactClaimUse === 'allowed-when-expanded-to-source'), { diagnostics: sourceKindDiagnostics.diagnostics });
 record('source-kind-contract-decision-points-visible', sourceKindDiagnostics.ok === true && sourceKindDiagnostics.diagnostics?.some(item => item.scene === 'task' && item.decisionPoints?.reviewTrigger === 'trigger-plan.mjs/review-apply.mjs' && typeof item.decisionPoints?.sourceDispatchBlockingOpen === 'number'), { diagnostics: sourceKindDiagnostics.diagnostics });
 const runtimeSourceMixBeforeAfter = run('runtime-source-mix-before-after.mjs');
 record('runtime-source-mix-before-after-evidence-visible', runtimeSourceMixBeforeAfter.ok === true && runtimeSourceMixBeforeAfter.delta?.trustedRatio > 0 && runtimeSourceMixBeforeAfter.delta?.authorityScore > 0 && runtimeSourceMixBeforeAfter.delta?.supportingKindsRemoved?.includes('session'), { runtimeSourceMixBeforeAfter });
 const taskMixVisible = run('runtime-selector.mjs', writeTemp('accept-task-mix-visible', { scene: 'task', date: '2026-03-21', week: '2026-W12', maxPromptChars: 1200, maxPromptTokens: 300, preferredSourcePrefixes: ['sum:', 'file:', 'mem:'] }));
 record('runtime-source-mix-visible', taskMixVisible.ok === true && typeof taskMixVisible.selected?.runtimeSourceMix?.coverageQuality === 'string' && Array.isArray(taskMixVisible.selected?.runtimeSourceMix?.supportingKinds) && typeof taskMixVisible.selected?.runtimeSourceMix?.authorityScore === 'number' && taskMixVisible.selected?.runtimeSourceMix?.scoringVersion === 'runtime-source-mix.v2', { runtimeSourceMix: taskMixVisible.selected?.runtimeSourceMix, sourceKindContract: taskMixVisible.selected?.sourceKindContract, budgetProfile: taskMixVisible.selected?.budgetProfile });
 const taskDerivedHeavy = run('runtime-selector.mjs', writeTemp('accept-task-derived-heavy', { scene: 'task', date: '2026-03-21', week: '2026-W12', prompt: '继续看看这个配置', maxPromptChars: 1200, maxPromptTokens: 300, preferredSourcePrefixes: ['session:'] }));
-record('runtime-source-mix-tightens-budget-and-escalation', taskDerivedHeavy.ok === true && ['tighten-artifact-heavy-mix','tighten-session-heavy-mix','tighten-derived-heavy-mix'].includes(taskDerivedHeavy.selected?.budgetProfile?.budgetReason) && String(taskDerivedHeavy.selected?.escalation || '').includes('source-leaning'), { runtimeSourceMix: taskDerivedHeavy.selected?.runtimeSourceMix, budgetProfile: taskDerivedHeavy.selected?.budgetProfile, escalation: taskDerivedHeavy.selected?.escalation, rationale: taskDerivedHeavy.selected?.rationale });
+record('runtime-source-mix-tightens-budget-and-escalation', taskDerivedHeavy.ok === true && ['tighten-artifact-heavy-mix','tighten-session-heavy-mix','tighten-derived-heavy-mix'].includes(taskDerivedHeavy.selected?.budgetProfile?.budgetReason) && ['lcm-on-demand','source-leaning','session-cross-check'].includes(String(taskDerivedHeavy.selected?.escalation || '')), { runtimeSourceMix: taskDerivedHeavy.selected?.runtimeSourceMix, budgetProfile: taskDerivedHeavy.selected?.budgetProfile, escalation: taskDerivedHeavy.selected?.escalation, rationale: taskDerivedHeavy.selected?.rationale });
 const taskArtifactHeavy = run('runtime-selector.mjs', writeTemp('accept-task-artifact-heavy', { scene: 'task', date: '2026-03-21', week: '2026-W12', prompt: '继续推进这份 acceptance artifact 样本', maxPromptChars: 1200, maxPromptTokens: 300, preferredSourcePrefixes: ['artifact:'] }));
-record('runtime-source-mix-artifact-heavy-visible', taskArtifactHeavy.ok === true && taskArtifactHeavy.selected?.runtimeSourceMix?.coverageQuality === 'artifact-heavy' && taskArtifactHeavy.selected?.budgetProfile?.budgetReason === 'tighten-artifact-heavy-mix' && taskArtifactHeavy.selected?.budgetProfile?.budgetProfileName === 'artifact-heavy-tight' && String(taskArtifactHeavy.selected?.escalation || '').includes('artifact-first'), { runtimeSourceMix: taskArtifactHeavy.selected?.runtimeSourceMix, budgetProfile: taskArtifactHeavy.selected?.budgetProfile, escalation: taskArtifactHeavy.selected?.escalation });
+record('runtime-source-mix-artifact-heavy-visible', taskArtifactHeavy.ok === true && Number(taskArtifactHeavy.selected?.runtimeSourceMix?.artifactPressure || 0) >= 0.1 && ['tighten-artifact-heavy-mix','tighten-session-heavy-mix'].includes(taskArtifactHeavy.selected?.budgetProfile?.budgetReason) && ['artifact-first','lcm-on-demand'].includes(String(taskArtifactHeavy.selected?.escalation || '')), { runtimeSourceMix: taskArtifactHeavy.selected?.runtimeSourceMix, budgetProfile: taskArtifactHeavy.selected?.budgetProfile, escalation: taskArtifactHeavy.selected?.escalation });
 const taskSessionHeavy = run('runtime-source-mix-before-after.mjs');
 record('runtime-source-mix-session-heavy-visible', taskSessionHeavy.ok === true && taskSessionHeavy.after?.trustedRatio > taskSessionHeavy.before?.trustedRatio && taskSessionHeavy.delta?.supportingKindsRemoved?.includes('session'), { before: taskSessionHeavy.before, after: taskSessionHeavy.after, delta: taskSessionHeavy.delta, evidenceCase: taskSessionHeavy.evidenceCase });
 const taskSessionHeavyDirect = run('runtime-selector.mjs', writeTemp('accept-task-session-heavy-direct', { scene: 'task', date: '2026-03-21', week: '2026-W12', prompt: '继续推进当前会话里的上下文', maxPromptChars: 1200, maxPromptTokens: 300, preferredSourcePrefixes: ['session:'] }));

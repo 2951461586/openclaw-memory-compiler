@@ -50,8 +50,12 @@ const selectorCfg = tempJson('session-pack-selector', {
   maxContinuity: payload.maxContinuity || 3,
   preferredSourcePrefixes: payload.preferredSourcePrefixes || ['sum:', 'file:', 'mem:']
 });
-const selector = run('runtime-selector.mjs', selectorCfg);
-fs.unlinkSync(selectorCfg);
+let selector;
+try {
+  selector = run('runtime-selector.mjs', selectorCfg);
+} finally {
+  if (fs.existsSync(selectorCfg)) fs.unlinkSync(selectorCfg);
+}
 const selected = selector.selected;
 const generatedAt = nowIso();
 const pack = buildSessionPack({ selected, payload, generatedAt });

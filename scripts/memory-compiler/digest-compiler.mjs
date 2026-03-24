@@ -5,7 +5,7 @@ import crypto from 'crypto';
 import { readJsonInput, printResult } from './lib/io.mjs';
 import { readJsonl } from './lib/jsonl-store.mjs';
 import { nowIso, uniq, hashId } from './lib/common.mjs';
-import { assessSourceRefs } from './lib/source-discipline.mjs';
+import { assessSourceRefs, isTrustedRef } from './lib/source-discipline.mjs';
 import { resolveCompilerRuntime, isDirectCli } from './lib/plugin-paths.mjs';
 
 function usage() {
@@ -20,8 +20,6 @@ function fmtList(items) { return items.length ? items.map(x => `- ${x}`).join('\
 function sha1(s) { return crypto.createHash('sha1').update(s).digest('hex'); }
 function intersects(a = [], b = []) { const bs = new Set(b); return a.some(x => bs.has(x)); }
 
-const TRUSTED_PREFIXES = ['sum:', 'file:', 'mem:'];
-function isTrustedRef(ref) { return TRUSTED_PREFIXES.some(p => String(ref).startsWith(p)); }
 function trustedRefs(refs = []) { return uniq(refs.filter(isTrustedRef)); }
 
 function hasTrustedSources(rec) { return assessSourceRefs(rec?.sourceRefs || []).hasTrusted; }

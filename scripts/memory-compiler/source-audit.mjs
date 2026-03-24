@@ -3,11 +3,11 @@ import fs from 'fs';
 import path from 'path';
 import { printResult } from './lib/io.mjs';
 import { resolveCompilerRuntime, isDirectCli } from './lib/plugin-paths.mjs';
+import { isAllowedSourceRef } from './lib/source-discipline.mjs';
 
 export function runSourceAudit(runtime = resolveCompilerRuntime()) {
   const compilerDir = runtime.dataDir;
   const files = ['facts.jsonl', 'threads.jsonl', 'continuity.jsonl'].map(f => path.join(compilerDir, f));
-  const allowedPrefixes = ['sum:', 'msg:', 'session:', 'file:', 'mem:', 'artifact:'];
   const issues = [];
 
   for (const file of files) {
@@ -27,7 +27,7 @@ export function runSourceAudit(runtime = resolveCompilerRuntime()) {
         return;
       }
       refs.forEach((ref) => {
-        if (!allowedPrefixes.some(p => String(ref).startsWith(p))) {
+        if (!isAllowedSourceRef(ref)) {
           issues.push({ file: path.basename(file), line: idx + 1, id: rec.id ?? null, kind: 'sourceRef-format', ref });
         }
       });

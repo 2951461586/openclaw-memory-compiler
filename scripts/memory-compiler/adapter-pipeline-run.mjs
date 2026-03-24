@@ -24,7 +24,9 @@ if (!adapter || !inputPath) usage();
 const adapterMap = {
   raw: path.join(base, 'ingest-normalize.mjs'),
   lcm: path.join(base, 'adapters', 'lcm-summary-import.mjs'),
+  'lcm-summary': path.join(base, 'adapters', 'lcm-summary-import.mjs'),
   lancedb: path.join(base, 'adapters', 'lancedb-memory-import.mjs'),
+  'memory-lancedb': path.join(base, 'adapters', 'lancedb-memory-import.mjs'),
   workspace: path.join(base, 'adapters', 'workspace-note-import.mjs'),
   'session-state': path.join(base, 'adapters', 'session-state-import.mjs')
 };
@@ -36,5 +38,5 @@ const normalized = execFileSync('node', [adapterScript, inputPath], { cwd: root,
 const tmpPath = path.join(os.tmpdir(), `memory-compiler-${adapter}-${Date.now()}.json`);
 fs.writeFileSync(tmpPath, normalized);
 const result = JSON.parse(execFileSync('node', [path.join(base, 'pipeline-run.mjs'), tmpPath], { cwd: root, encoding: 'utf8' }));
-fs.unlinkSync(tmpPath);
+if (fs.existsSync(tmpPath)) fs.unlinkSync(tmpPath);
 printResult({ ok: true, adapter, inputPath, result });

@@ -5,8 +5,7 @@ import { readJsonl } from './lib/jsonl-store.mjs';
 import { printResult } from './lib/io.mjs';
 import { resolveCompilerRuntime, isDirectCli } from './lib/plugin-paths.mjs';
 
-const TRUSTED_PREFIXES = ['sum:', 'file:', 'mem:'];
-function isTrusted(ref){ return TRUSTED_PREFIXES.some(p => String(ref).startsWith(p)); }
+import { isTrustedRef as isTrusted } from './lib/source-discipline.mjs';
 function summarize(list, predicate) {
   const target = list.filter(predicate);
   const trusted = target.filter(x => (x.sourceRefs || []).some(isTrusted)).length;

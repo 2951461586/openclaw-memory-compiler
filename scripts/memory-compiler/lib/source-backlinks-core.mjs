@@ -2,6 +2,7 @@ import fs from 'fs';
 import path from 'path';
 import { readJsonl, ensureParent } from './jsonl-store.mjs';
 import { uniq, nowIso } from './common.mjs';
+import { isAllowedSourceRef } from './source-discipline.mjs';
 
 function readJsonIfExists(filePath) {
   try { return fs.existsSync(filePath) ? JSON.parse(fs.readFileSync(filePath, 'utf8')) : null; } catch { return null; }
@@ -11,7 +12,7 @@ function listJson(dirPath) {
   return fs.readdirSync(dirPath).filter(x => x.endsWith('.json')).sort().map(name => ({ name, abs: path.join(dirPath, name) }));
 }
 function normalizeArtifactEntry(kind, rec, meta = {}) {
-  const sourceRefs = uniq(rec?.sourceRefs || meta.sourceRefs || []);
+  const sourceRefs = uniq(rec?.sourceRefs || meta.sourceRefs || []).filter(isAllowedSourceRef);
   if (!sourceRefs.length) return null;
   return {
     artifactKind: kind,

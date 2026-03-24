@@ -5,12 +5,12 @@ import { printResult } from './lib/io.mjs';
 import { readJsonl } from './lib/jsonl-store.mjs';
 
 import { resolveCompilerRuntime, compilerDirFrom } from './lib/plugin-paths.mjs';
+import { isAllowedSourceRef } from './lib/source-discipline.mjs';
 
 const runtime = resolveCompilerRuntime();
 const root = runtime.workspaceDir;
 const compilerDir = compilerDirFrom(root, runtime);
 const schemasDir = runtime.schemasDir;
-const TRUSTED_PREFIXES = ['sum:', 'msg:', 'session:', 'file:', 'mem:', 'artifact:'];
 
 function readJson(file) {
   return JSON.parse(fs.readFileSync(file, 'utf8'));
@@ -93,8 +93,8 @@ function validateSourceRefs(record, label, requireNonEmpty = false) {
   const errors = [];
   if (requireNonEmpty && refs.length === 0) errors.push(`${label}: sourceRefs empty`);
   for (const ref of refs) {
-    if (!TRUSTED_PREFIXES.some(prefix => String(ref).startsWith(prefix))) {
-      errors.push(`${label}: invalid sourceRef prefix ${ref}`);
+    if (!isAllowedSourceRef(ref)) {
+      errors.push(`${label}: invalid sourceRef ${ref}`);
     }
   }
   return errors;

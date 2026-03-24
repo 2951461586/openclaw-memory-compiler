@@ -22,6 +22,13 @@ function usage() {
 function readText(filePath) {
   return fs.existsSync(filePath) ? fs.readFileSync(filePath, 'utf8') : '';
 }
+function readJsonIfExists(filePath) {
+  try {
+    return fs.existsSync(filePath) ? JSON.parse(fs.readFileSync(filePath, 'utf8')) : null;
+  } catch {
+    return null;
+  }
+}
 function tmpJson(name, obj) {
   const file = path.join(os.tmpdir(), `memory-compiler-${name}-${Date.now()}-${Math.random().toString(36).slice(2)}.json`);
   fs.writeFileSync(file, JSON.stringify(obj, null, 2));
@@ -94,12 +101,38 @@ const workspaceFiles = Array.isArray(cfg?.workspaceFiles) && cfg.workspaceFiles.
       path.join(workspaceRoot, 'memory', '2026-03-18.md'),
     ];
 const durableMemoryPath = cfg?.durableMemoryExportPath || path.join(workspaceRoot, 'memory', 'compiler', 'imports', 'durable-memory.export.json');
+const lcmSummaryImportPath = cfg?.lcmSummaryImportPath || null;
+const lcmDbPath = cfg?.lcmDbPath || null;
+const lcmExportConfig = cfg?.lcmExport || null;
+const durableMemoryExportConfig = cfg?.durableMemoryExport || null;
 
 const existingDaily = dailyGlobs.filter(p => fs.existsSync(p));
 const existingWorkspace = workspaceFiles.filter(p => fs.existsSync(p));
 let durableExport = null;
 if (fs.existsSync(durableMemoryPath)) {
-  try { durableExport = JSON.parse(fs.readFileSync(durableMemoryPath, 'utf8')); } catch {}
+  try {
+    durableExport = JSON.parse(fs.readFileSync(durableMemoryPath, 'utf8'));
+  } catch {}
+}
+let durableExportError = null;
+if (!durableExport && durableMemoryExportConfig) {
+  try {
+    durableExport = runJson('export-durable-memory.mjs', durableMemoryExportConfig);
+  } catch (error) {
+    durableExportError = String(error?.message || error);
+  }
+}
+let lcmSummaryImport = lcmSummaryImportPath ? readJsonIfExists(lcmSummaryImportPath) : null;
+let lcmExportError = null;
+if (!lcmSummaryImport && (lcmExportConfig || lcmDbPath)) {
+  try {
+    lcmSummaryImport = runJson('export-lcm-summaries.mjs', {
+      ...(lcmExportConfig || {}),
+      ...(lcmDbPath ? { dbPath: lcmDbPath } : {}),
+    });
+  } catch (error) {
+    lcmExportError = String(error?.message || error);
+  }
 }
 
 const workspaceNotes = {
@@ -153,10 +186,17 @@ const durableEntries = Array.isArray(cfg?.durableMemories)
     ? durableExport.memories.map(normalizeMemoryEntry).filter(Boolean)
     : [];
 const durablePayload = { date, week, pluginId: durableExport?.pluginId || cfg?.pluginId || 'memory-lancedb-pro', memories: durableEntries };
+const lcmSummaries = Array.isArray(cfg?.lcmSummaries)
+  ? cfg.lcmSummaries.filter(item => item && typeof item === 'object')
+  : Array.isArray(lcmSummaryImport?.summaries)
+    ? lcmSummaryImport.summaries.filter(item => item && typeof item === 'object')
+    : [];
+const lcmPayload = { date, week, summaries: lcmSummaries };
 
 const runs = [];
 if (workspaceNotes.notes.length) runs.push({ kind: 'workspace', out: runAdapter('workspace', workspaceNotes) });
 if (sessionState.confirmedFacts.length || sessionState.activeThreads.length || sessionState.continuityFocus) runs.push({ kind: 'session-state', out: runAdapter('session-state', sessionState) });
+if (lcmSummaries.length) runs.push({ kind: 'lcm', out: runAdapter('lcm-summary', lcmPayload) });
 if (durableEntries.length) {
   if (cfg?.durableImportMode === 'batch' || durableEntries.length > Number(cfg?.durableBatchThreshold || 1)) {
     runs.push({
@@ -180,6 +220,13 @@ const controlPlane = runJson('control-plane-refresh.mjs', { refresh: true });
 const verify = runJson('control-plane-verify.mjs', { includeAcceptance: true });
 
 const sourceLinkIndex = JSON.parse(fs.readFileSync(path.join(root, 'memory', 'compiler', 'source-links', 'index.json'), 'utf8'));
+const lcmSummaryRefs = lcmSummaries
+  .map(item => item?.id ? `sum:${item.id}` : null)
+  .filter(Boolean);
+const lcmMessageRefs = lcmSummaries
+  .flatMap(item => [...(item?.messageIds || []), ...(item?.leafMessageIds || []), ...(item?.msgIds || [])])
+  .filter(Boolean)
+  .map(id => `msg:${id}`);
 const sourceCoverage = {
   totalSources: sourceLinkIndex?.totalSources || 0,
   totalArtifacts: sourceLinkIndex?.totalArtifacts || 0,
@@ -188,8 +235,11 @@ const sourceCoverage = {
     dailyMemory: existingDaily.map(filePath => `file:${filePath}`).filter(ref => (sourceLinkIndex?.sources || []).some(item => item.sourceRef === ref)),
     workspace: existingWorkspace.map(filePath => `file:${filePath}`).filter(ref => (sourceLinkIndex?.sources || []).some(item => item.sourceRef === ref)),
     durableMemory: durableEntries.map(item => `mem:${item.id}`).filter(ref => (sourceLinkIndex?.sources || []).some(entry => entry.sourceRef === ref)),
+    lcmSummary: lcmSummaryRefs.filter(ref => (sourceLinkIndex?.sources || []).some(entry => entry.sourceRef === ref)),
+    lcmMessage: lcmMessageRefs.filter(ref => (sourceLinkIndex?.sources || []).some(entry => entry.sourceRef === ref)),
   },
 };
+
 const report = {
   ok: true,
   generatedAt,
@@ -199,7 +249,14 @@ const report = {
     dailyMemoryPaths: existingDaily,
     workspaceFiles: existingWorkspace,
     durableMemoryExportPath: fs.existsSync(durableMemoryPath) ? durableMemoryPath : null,
+    durableMemoryExportMode: durableExport?.memories ? (fs.existsSync(durableMemoryPath) ? 'file' : 'live-export') : null,
+    durableMemoryExportError: durableExportError,
     durableMemoryItems: durableEntries.length,
+    lcmSummaryImportPath: lcmSummaryImportPath && fs.existsSync(lcmSummaryImportPath) ? lcmSummaryImportPath : null,
+    lcmSummaryImportMode: lcmSummaries.length ? (lcmSummaryImportPath && fs.existsSync(lcmSummaryImportPath) ? 'file' : ((lcmExportConfig || lcmDbPath) ? 'live-export' : 'inline')) : null,
+    lcmSummaryExportError: lcmExportError,
+    lcmSummaryItems: lcmSummaries.length,
+    lcmDbPath: lcmSummaryImport?.dbPath || lcmDbPath || null,
   },
   sourceCoverage,
   runs: runs.map(item => ({
@@ -226,6 +283,7 @@ const report = {
       'memory/compiler/source-links/index.json',
       'memory/compiler/reports/control-plane-verify.latest.json',
       'memory/compiler/reports/durable-memory-batch-import.latest.json',
+      'memory/compiler/reports/real-import.latest.json',
     ],
   })),
   controlPlane: {

@@ -4,14 +4,13 @@ import path from 'node:path';
 import { readJsonl, writeJsonl } from './lib/jsonl-store.mjs';
 import { printResult } from './lib/io.mjs';
 import { nowIso, uniq } from './lib/common.mjs';
+import { isTrustedRef as isTrusted } from './lib/source-discipline.mjs';
 
 const root = process.cwd();
 const compilerDir = path.join(root, 'memory', 'compiler');
 const reportsDir = path.join(compilerDir, 'reports');
-const TRUSTED_PREFIXES = ['sum:', 'file:', 'mem:'];
 fs.mkdirSync(reportsDir, { recursive: true });
 
-function isTrusted(ref){ return TRUSTED_PREFIXES.some(p => String(ref).startsWith(p)); }
 function trustedCount(refs=[]){ return refs.filter(isTrusted).length; }
 function artifactOnly(refs=[]){ return refs.length > 0 && trustedCount(refs) === 0; }
 

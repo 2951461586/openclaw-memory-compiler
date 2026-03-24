@@ -17,20 +17,26 @@ const threads = [];
 const continuity = [];
 
 for (const s of summaries) {
-  const ref = s.id ? `sum:${s.id}` : null;
+  const summaryRef = s.id ? `sum:${s.id}` : null;
+  const messageRefs = uniq([...(s.messageIds || []), ...(s.leafMessageIds || []), ...(s.msgIds || [])]
+    .filter(Boolean)
+    .map(id => `msg:${id}`));
+  const summaryRefs = uniq([...(s.sourceRefs || []), ...messageRefs, ...(summaryRef ? [summaryRef] : [])]);
+
   if (s.threadTitle) {
     threads.push({
       title: s.threadTitle,
       scope: s.scope || 'project',
       status: s.threadStatus || 'active',
       summary: s.threadSummary || s.summary || s.threadTitle,
-      sourceRefs: uniq([...(s.sourceRefs || []), ...(ref ? [ref] : [])]),
+      sourceRefs: summaryRefs,
       relatedFacts: uniq(s.relatedFacts || []),
       nextStepHint: s.nextStepHint || null,
       priority: s.priority ?? null,
       staleAfterHours: s.staleAfterHours ?? 72
     });
   }
+
   for (const f of s.confirmedFacts || []) {
     facts.push({
       scope: f.scope || s.scope || 'project',
@@ -40,10 +46,11 @@ for (const s of summaries) {
       text: f.text,
       status: 'confirmed',
       tags: uniq(f.tags || []),
-      sourceRefs: uniq([...(f.sourceRefs || []), ...(ref ? [ref] : [])]),
+      sourceRefs: uniq([...(f.sourceRefs || []), ...summaryRefs]),
       confidence: f.confidence ?? 0.9
     });
   }
+
   if (s.focus) {
     continuity.push({
       focus: s.focus,
@@ -51,7 +58,7 @@ for (const s of summaries) {
       risks: uniq(s.risks || []),
       nextActions: uniq(s.nextActions || []),
       relatedThreads: uniq(s.relatedThreads || []),
-      sourceRefs: uniq([...(s.sourceRefs || []), ...(ref ? [ref] : [])])
+      sourceRefs: summaryRefs
     });
   }
 }

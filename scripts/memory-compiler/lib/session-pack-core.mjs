@@ -1,5 +1,5 @@
 import { uniq, hashId } from './common.mjs';
-import { assessSourceRefs } from './source-discipline.mjs';
+import { assessSourceRefs, isAllowedSourceRef } from './source-discipline.mjs';
 
 function topStrings(items, max=4) {
   return [...new Set((items || []).filter(Boolean).map(x => String(x).trim()).filter(Boolean))].slice(0, max);
@@ -39,7 +39,7 @@ export function buildSessionPack({ selected, payload, generatedAt }) {
     ...(selected.continuity || []).flatMap(x => x.sourceRefs || []),
     ...(selected.digests || []).flatMap(x => x.sourceRefs || []),
     ...(payload.sessionKey ? [`session:${payload.sessionKey}`] : []),
-  ]);
+  ]).filter(isAllowedSourceRef);
   const discipline = assessSourceRefs(allRefs);
   const ttlHours = Number(payload.ttlHours || 6);
   const expiresAt = new Date(Date.now() + ttlHours * 3600 * 1000).toISOString();
