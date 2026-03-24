@@ -6,6 +6,17 @@ This file freezes the cleanup boundary for the plugin-first migration of `memory
 
 It exists to prevent destructive cleanup against active runtime state while the package is still in pre-retirement mode.
 
+## Current retirement status (2026-03-24)
+
+On maintained nodes (`violet` / `laoda` / `lebang`), the workspace-root legacy surfaces have now been formally retired and removed:
+- `scripts/memory-compiler/`
+- `reports/openclaw-memory-compiler/`
+- `plugins/memory-compiler-bridge/`
+
+This does **not** change the hard keep rule for `memory/compiler/`, which remains the live runtime/data root.
+
+Treat this file as the boundary record explaining **what was safe to remove** and **what must still never be cleaned as legacy junk**.
+
 ## Hard boundary: do not delete
 
 ### `memory/compiler/`

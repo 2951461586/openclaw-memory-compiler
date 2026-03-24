@@ -152,6 +152,15 @@ If all four are green, you have a usable install surface.
 
 ## Install into an existing trusted workspace
 
+### Legacy surface note (2026-03-24)
+
+On maintained nodes, the old workspace-root legacy surfaces have already been retired and removed:
+- `scripts/memory-compiler/`
+- `reports/openclaw-memory-compiler/`
+- `plugins/memory-compiler-bridge/`
+
+If you still see references to those paths in old notes or copied snippets, treat them as historical/stale and prefer the plugin-owned surface under `plugins/memory-compiler/`.
+
 If the workspace already has trusted `memory/compiler` data, keep it in place.
 
 Recommended order:
