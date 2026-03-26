@@ -15,16 +15,16 @@ function buildSourceDispatchSystemInstruction(dispatch: any): string {
     : [];
   return [
     "<source-dispatch-instruction>",
-    "When answering this run, treat source dispatch as executable guidance, not optional commentary.",
-    `Dispatch contract: ${dispatch.contractVersion || "source-dispatch.v1"}`,
+    "Treat source dispatch below as executable tool-routing guidance for this run.",
+    `Contract: ${dispatch.contractVersion || "source-dispatch.v1"}`,
     `Blocking: ${blocking ? "yes" : "no"}`,
-    `Primary tool call: ${primary.tool} ${JSON.stringify(primary.params || {})}`,
+    `Primary call: ${primary.tool} ${JSON.stringify(primary.params || {})}`,
     primary.reason ? `Primary reason: ${primary.reason}` : null,
-    fallbackLines.length ? "Fallbacks:" : null,
+    fallbackLines.length ? "Fallback calls:" : null,
     ...fallbackLines,
     blocking
-      ? "Blocking rule: before giving any exact factual answer, execute the primary tool call first; if it fails, try fallbacks in order before answering."
-      : "Non-blocking rule: prefer the primary tool call before answering exact factual questions.",
+      ? "Blocking rule: run the primary call before any exact factual answer; if it fails, try fallbacks in order before answering."
+      : "Preferred rule: run the primary call before exact factual answers.",
     "</source-dispatch-instruction>",
   ].filter(Boolean).join("\n");
 }

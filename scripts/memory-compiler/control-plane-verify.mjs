@@ -42,7 +42,9 @@ export function verifyControlPlane({ root = process.cwd(), payload = {}, paths: 
   const runtimeProbe = maybeReadJson(path.join(reportsDir, 'runtime-probe.latest.json'));
   const runtimeProbeTrend = maybeReadJson(path.join(reportsDir, 'runtime-probe-trend.latest.json'));
   const acceptanceReviewGovernance = maybeReadJson(path.join(reportsDir, 'acceptance-review-governance.latest.json'));
-  const realImport = maybeReadJson(path.join(reportsDir, 'real-import.latest.json'));
+  const realImportLatest = maybeReadJson(path.join(reportsDir, 'real-import.latest.json'));
+  const realImportLive = maybeReadJson(path.join(reportsDir, 'real-import.live.json'));
+  const realImport = realImportLive || realImportLatest;
   const burnInTrend = maybeReadJson(path.join(reportsDir, 'burn-in-trend.latest.json'));
 
   const blockers = [];

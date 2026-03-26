@@ -240,6 +240,9 @@ const sourceCoverage = {
   },
 };
 
+const namespace = String(cfg?.namespace || (String(cfg?.label || '').startsWith('accept') ? 'acceptance' : 'operator'));
+const operatorTruthPath = 'memory/compiler/reports/real-import.live.json';
+
 const report = {
   ok: true,
   generatedAt,
@@ -286,14 +289,28 @@ const report = {
       'memory/compiler/reports/real-import.latest.json',
     ],
   })),
+  reportScope: {
+    namespace,
+    latestScope: 'latest-run',
+    truthMode: namespace === 'acceptance' ? 'acceptance-replay-latest-not-live-truth' : 'operator-latest',
+    operatorTruthPath,
+    preciseClaimRule: namespace === 'acceptance'
+      ? 'read operator truth from real-import.live.json, not acceptance latest'
+      : 'this report is operator latest truth',
+  },
   controlPlane: {
     refreshed: controlPlane?.ok === true,
     verifyOk: verify?.ok === true,
     operatorVerdict: verify?.operatorVerdict || null,
+    liveTruthPath: operatorTruthPath,
     evidencePaths: verify?.evidencePaths || [],
   },
 };
 
 const out = path.join(reportsDir, 'real-import.latest.json');
+const liveOut = path.join(reportsDir, 'real-import.live.json');
+const acceptanceOut = path.join(reportsDir, 'real-import.acceptance-latest.json');
 fs.writeFileSync(out, JSON.stringify(report, null, 2) + '\n');
-printResult({ ...report, out });
+if (namespace === 'operator') fs.writeFileSync(liveOut, JSON.stringify(report, null, 2) + '\n');
+if (namespace === 'acceptance') fs.writeFileSync(acceptanceOut, JSON.stringify(report, null, 2) + '\n');
+printResult({ ...report, out, liveOut: namespace === 'operator' ? liveOut : null, acceptanceOut: namespace === 'acceptance' ? acceptanceOut : null });

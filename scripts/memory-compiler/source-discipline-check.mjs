@@ -2,7 +2,7 @@
 import fs from 'fs';
 import path from 'path';
 import { readJsonl } from './lib/jsonl-store.mjs';
-import { printResult } from './lib/io.mjs';
+import { printResult, readJsonInput } from './lib/io.mjs';
 import { resolveCompilerRuntime, isDirectCli } from './lib/plugin-paths.mjs';
 
 import { isTrustedRef as isTrusted } from './lib/source-discipline.mjs';
@@ -43,6 +43,8 @@ export function checkSourceDiscipline(_payload = {}, runtime = resolveCompilerRu
 }
 
 if (isDirectCli(import.meta.url)) {
-  if (process.argv[2]) usage();
-  printResult(checkSourceDiscipline());
+  const payloadArg = process.argv[2];
+  if (payloadArg === '--help' || payloadArg === '-h' || process.argv[3]) usage();
+  const payload = payloadArg ? readJsonInput(payloadArg === '-' ? null : payloadArg) : {};
+  printResult(checkSourceDiscipline(payload));
 }

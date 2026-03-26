@@ -70,8 +70,7 @@
 ### 5. 自动整理是增强层，不是唯一入口
 
 编译层负责让系统“更像会持续整理记忆的人”，而不是替代：
-- memory_recall
-- lcm_expand_query
+- lcm_grep / lcm_expand_query
 - 原始 session 历史
 
 ---

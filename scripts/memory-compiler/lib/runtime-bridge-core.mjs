@@ -1,5 +1,7 @@
 import fs from 'fs';
+import os from 'os';
 import path from 'path';
+import { DatabaseSync } from 'node:sqlite';
 import { inferSceneDetailed, shouldIncludeReviewTriage, shouldIncludeResumeHandoff } from './runtime-policy.mjs';
 import { selectRuntimeContext } from './runtime-selector-core.mjs';
 import { triageReviewQueue } from './review-triage-core.mjs';
@@ -44,7 +46,78 @@ function wrapTaggedBlock(tag, title, lines) {
   return [ `<${tag}>`, title ? title : null, ...body, `</${tag}>` ].filter(Boolean).join('\n');
 }
 
-function buildSourceActionPlan(selected, payload = {}) {
+function resolveSummaryConversationScope(summaryIds = [], payload = {}) {
+  const ids = Array.isArray(summaryIds) ? [...new Set(summaryIds.map(x => String(x || '').trim()).filter(Boolean))] : [];
+  if (!ids.length) return null;
+  if (payload?.conversationId != null && Number.isFinite(Number(payload.conversationId))) {
+    return { conversationId: Number(payload.conversationId), source: 'payload-conversationId' };
+  }
+  const dbPath = payload?.lcmDbPath || path.join(process.env.HOME || os.homedir(), '.openclaw', 'lcm.db');
+  if (!fs.existsSync(dbPath)) return null;
+  try {
+    const db = new DatabaseSync(dbPath, { readonly: true });
+    const marks = ids.map(() => '?').join(', ');
+    const rows = db.prepare(`select summary_id, conversation_id from summaries where summary_id in (${marks})`).all(...ids);
+    const conversationIds = [...new Set(rows.map(row => Number(row.conversation_id)).filter(Number.isFinite))];
+    if (conversationIds.length === 1) {
+      return {
+        conversationId: conversationIds[0],
+        source: 'lcm-db-summary-lookup',
+        matchedSummaryIds: rows.map(row => String(row.summary_id)),
+      };
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+function discoverSummaryCandidatesByQuery(queryTerms = [], payload = {}) {
+  const terms = [...new Set((queryTerms || []).map(x => String(x || '').trim()).filter(x => x.length >= 2))].slice(0, 6);
+  if (!terms.length) return null;
+  const dbPath = payload?.lcmDbPath || path.join(process.env.HOME || os.homedir(), '.openclaw', 'lcm.db');
+  if (!fs.existsSync(dbPath)) return null;
+  try {
+    const db = new DatabaseSync(dbPath, { readonly: true });
+    const likeParams = terms.map(term => `%${term}%`);
+    const where = terms.map(() => 'content like ?').join(' OR ');
+    const rows = db.prepare(`
+      select summary_id, conversation_id, created_at, content
+      from summaries
+      where ${where}
+      order by created_at desc
+      limit 120
+    `).all(...likeParams);
+    if (!rows.length) return null;
+    const scored = rows.map((row) => {
+      const content = String(row.content || '');
+      const matchedTerms = terms.filter(term => content.includes(term));
+      return {
+        summaryId: String(row.summary_id),
+        conversationId: Number(row.conversation_id),
+        createdAt: String(row.created_at || ''),
+        matchedTerms,
+        score: matchedTerms.length,
+      };
+    }).filter(row => row.score > 0);
+    if (!scored.length) return null;
+    scored.sort((a, b) => b.score - a.score || String(b.createdAt).localeCompare(String(a.createdAt)));
+    const topConversationId = scored[0].conversationId;
+    if (!Number.isFinite(topConversationId)) return null;
+    const summaryIds = scored.filter(row => row.conversationId === topConversationId).slice(0, 3).map(row => row.summaryId);
+    if (!summaryIds.length) return null;
+    return {
+      conversationId: topConversationId,
+      summaryIds,
+      source: 'lcm-db-query-discovery',
+      matchedTerms: scored[0].matchedTerms,
+    };
+  } catch {
+    return null;
+  }
+}
+
+export function buildSourceActionPlan(selected, payload = {}) {
   const recallPlan = selected?.recallPlan;
   if (!recallPlan) return null;
   const prompt = String(payload?.prompt || payload?.query || '').trim();
@@ -55,27 +128,47 @@ function buildSourceActionPlan(selected, payload = {}) {
   const steps = [];
 
   if (sumRefs.length) {
+    const scopedSummaryIds = sumRefs.slice(0, 3);
+    const scope = resolveSummaryConversationScope(scopedSummaryIds, payload);
     steps.push({
       priority: 1,
       tool: 'lcm_expand_query',
-      reason: 'trusted-summary-candidates-available',
+      reason: scope ? 'source-summary-expand-scoped' : 'source-summary-expand',
       params: {
-        summaryIds: sumRefs.slice(0, 3),
+        summaryIds: scopedSummaryIds,
         prompt: prompt || `Answer the precise question using source summaries: ${query}`,
+        ...(scope ? { conversationId: scope.conversationId } : {}),
       },
+      scope,
     });
   } else if (query) {
-    steps.push({
-      priority: 1,
-      tool: 'lcm_grep',
-      reason: 'no-summary-refs-find-relevant-summaries-first',
-      params: {
-        pattern: query,
-        mode: 'full_text',
-        scope: 'both',
-        limit: 5,
-      },
-    });
+    const discovered = discoverSummaryCandidatesByQuery(recallPlan.queryTerms || [], payload);
+    if (discovered?.summaryIds?.length) {
+      steps.push({
+        priority: 1,
+        tool: 'lcm_expand_query',
+        reason: 'source-summary-discover-scoped',
+        params: {
+          summaryIds: discovered.summaryIds,
+          prompt: prompt || `Answer the precise question using discovered source summaries: ${query}`,
+          conversationId: discovered.conversationId,
+        },
+        scope: discovered,
+      });
+    } else {
+      steps.push({
+        priority: 1,
+        tool: 'lcm_grep',
+        reason: 'source-summary-search',
+        params: {
+          pattern: query,
+          mode: 'full_text',
+          scope: 'both',
+          allConversations: true,
+          limit: 5,
+        },
+      });
+    }
   }
 
   if (fileRefs.length) {
@@ -93,10 +186,13 @@ function buildSourceActionPlan(selected, payload = {}) {
   if (query || memRefs.length) {
     steps.push({
       priority: steps.length + 1,
-      tool: 'memory_recall',
-      reason: memRefs.length ? 'cross-check-durable-memory' : 'fallback-durable-memory-search',
+      tool: 'lcm_grep',
+      reason: memRefs.length ? 'source-memory-cross-check' : 'source-search-fallback',
       params: {
-        query: query || prompt,
+        pattern: query || prompt,
+        mode: 'full_text',
+        scope: 'both',
+        allConversations: true,
         limit: 5,
       },
       memoryRefs: memRefs.slice(0, 5),
@@ -149,9 +245,9 @@ function buildSourceActionPlanBlock(plan, dispatchContract) {
   if (!plan) return '';
   const lines = [
     `Strategy: ${plan.strategy}`,
-    plan.reason ? `Reason: ${plan.reason}` : null,
+    plan.reason ? `Policy reason: ${plan.reason}` : null,
     Array.isArray(plan.queryTerms) && plan.queryTerms.length ? `Query anchors: ${plan.queryTerms.join(', ')}` : null,
-    plan.primary ? `Primary: ${plan.primary.tool} (${plan.primary.reason})` : null,
+    plan.primary ? `Primary step: ${plan.primary.tool} (${plan.primary.reason})` : null,
     dispatchContract?.primary ? `Dispatch-ready primary: ${dispatchContract.primary.tool} [${dispatchContract.primary.dispatchMode}]` : null,
     ...(plan.steps || []).map((step, i) => `${i + 1}. ${step.tool} -> ${step.reason}`),
   ].filter(Boolean);
